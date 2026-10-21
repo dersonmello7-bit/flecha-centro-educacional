@@ -239,3 +239,51 @@ h2 { font-size:clamp(40px,4.6vw,66px); line-height:1; letter-spacing:-.045em; }
   .transparency { padding-bottom:24px; }
   .team { padding-top:32px; }
 }
+
+/* Página mais direta: conteúdo essencial e detalhes sob demanda. */
+.statement {padding-block:64px;}
+.space,.differentials,.pedagogy,.testimonials {padding-block:72px;}
+.programs {padding-block:72px;}
+.differential-card {min-height:210px;}
+.pedagogy-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+.pedagogy-card,.pedagogy-main {min-height:0;grid-row:auto;grid-column:auto;padding:32px;}
+.pedagogy-main {justify-content:flex-start;}
+.pedagogy-main:before {font-size:40px;top:15px;right:18px;}
+.pedagogy-main h3 {font-size:30px;}
+.pedagogy-card p {margin-bottom:12px;}
+.transparency {padding-top:64px;}
+.transparency-grid article {min-height:200px;}
+.transparency-grid h3 {margin-top:28px;}
+.team {padding-bottom:64px;}
+.more-testimonials {margin-top:24px;}
+.more-testimonials>summary {cursor:pointer;padding:18px 0;font-size:14px;font-weight:700;color:var(--ink);}
+.more-testimonials .testimonial-grid {margin-top:12px;}
+.testimonial-grid {grid-template-columns:repeat(3,minmax(0,1fr));}
+.faq {padding-block:72px;}
+.faq h2 {margin:18px 0 32px;}
+.faq-list {border-top:1px solid #c7d3c4;}
+.faq details {border-bottom:1px solid #c7d3c4;padding:22px 0;}
+.faq summary {cursor:pointer;font-size:18px;font-weight:600;}
+.faq details p {margin:16px 0 0;max-width:780px;color:#526354;line-height:1.7;}
+.nav-actions>.button {display:inline-flex;}
+@media(max-width:760px){
+ .nav{flex-wrap:nowrap;}.nav-actions{margin-left:auto;}.nav .brand-logo{width:145px;height:60px;}.nav-actions>.button{font-size:12px;padding:13px 15px;}
+ .statement,.space,.differentials,.pedagogy,.testimonials,.programs,.faq {padding-block:48px;}
+ .pedagogy-grid,.testimonial-grid {grid-template-columns:1fr;}
+ .pedagogy-main {min-height:0;grid-column:auto;}
+ .pedagogy-card{padding:26px;}
+ .faq summary{font-size:16px;}
+ .testimonial-card{min-height:0;}
+}
+.hero-mascot {width:84%;height:78%;top:30px;overflow:visible;border-radius:0;}
+.hero-mascot img {width:100%;height:100%;object-fit:contain;max-width:100%;}
+.hero-sticker {z-index:3;top:16px;left:14px;transform:rotate(-8deg);width:86px;height:86px;}
+.hero-message {z-index:4;}
+@media(max-width:760px){.hero-art{min-height:470px;}.hero-mascot{top:30px;height:76%;}.hero-sticker{top:16px;left:12px;}.hero{min-height:0;padding-block:36px 48px;}}
+.family-access{background:var(--orange);white-space:nowrap;}
+.nav nav{gap:16px;font-size:12px;}
+.program-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+.icon-04:before,.icon-04:after{content:'';width:38px;height:62px;background:var(--mint);border:3px solid var(--ink);position:absolute;top:18px;border-radius:6px;}
+.icon-04:before{left:17px;transform:skewY(8deg);}.icon-04:after{right:17px;transform:skewY(-8deg);}
+@media(max-width:760px){.nav-actions>.button-small{display:none;}.nav-actions>.family-access{display:inline-flex;}.program-grid{grid-template-columns:1fr;}}
+.hero-sticker{top:auto;bottom:26px;left:24px;transform:rotate(-8deg);}
