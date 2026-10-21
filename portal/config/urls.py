@@ -1,0 +1,9 @@
+from django.contrib import admin
+from django.urls import path
+from django.contrib.auth import views as auth
+from django.views.generic import TemplateView
+from portal import views as v
+urlpatterns=[path('administracao/',admin.site.urls),path('entrar/',v.PortalLogin.as_view(),name='login'),path('sair/',auth.LogoutView.as_view(),name='logout'),path('recuperar/',v.PortalReset.as_view(),name='password_reset'),path('recuperar/enviado/',auth.PasswordResetDoneView.as_view(template_name='registration/password_reset_done.html'),name='password_reset_done'),path('redefinir/<uidb64>/<token>/',auth.PasswordResetConfirmView.as_view(template_name='registration/password_reset_confirm.html'),name='password_reset_confirm'),path('redefinir/concluido/',auth.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'),name='password_reset_complete'),path('',v.dashboard,name='dashboard'),path('comunicados/',v.notices,name='notices'),path('comunicados/<int:pk>/leitura/',v.confirm_read,name='confirm_read'),path('calendario/',v.events,name='events'),path('cardapio/',v.menus,name='menus'),path('agenda/<int:pk>/',v.agenda,name='agenda'),path('financeiro/',v.finance,name='finance'),path('financeiro/<int:pk>/comprovante/',v.proof,name='proof'),path('documentos/',v.documents,name='documents'),path('arquivo/<str:kind>/<int:pk>/',v.download,name='download'),path('atendimento/',v.tickets,name='tickets'),path('atendimento/novo/<int:pk>/',v.new_ticket,name='new_ticket'),path('atendimento/<int:pk>/',v.ticket,name='ticket')]
+urlpatterns += [path('conferencia-arquivo/<str:kind>/<int:pk>/',v.review_file,name='review_file')]
+urlpatterns += [path('privacidade/',TemplateView.as_view(template_name='portal/privacy.html'),name='privacy')]
+urlpatterns += [path('arquivo-armazenado/<path:key>',v.stored_file,name='stored_file'),path('health/',v.health,name='health')]

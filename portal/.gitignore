@@ -1,0 +1,11 @@
+.env
+.venv/
+*.sqlite3
+__pycache__/
+private_uploads/
+staticfiles/
+backups/
+local-mail/
+.local/
+.dependencies/
+.pip-tmp/
