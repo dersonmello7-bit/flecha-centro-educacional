@@ -30,14 +30,14 @@ class Accounts(UserAdmin):
     fieldsets=((None,{'fields':['email','password']}),('Identificação',{'fields':['first_name','last_name','role','is_active']}))
     add_fieldsets=((None,{'classes':['wide'],'fields':['email','first_name','last_name','role']}),)
     filter_horizontal=()
-    def has_module_permission(self,request):return request.user.role in ('technical','direction')
-    def has_view_permission(self,request,obj=None):return self.has_module_permission(request) and (obj is None or request.user.role=='technical' or obj.role=='guardian')
+    def has_module_permission(self,request):return request.user.role in ('general_admin','technical','direction')
+    def has_view_permission(self,request,obj=None):return self.has_module_permission(request) and (obj is None or request.user.role in ('general_admin','technical') or obj.role=='guardian')
     has_change_permission=has_view_permission
     def has_add_permission(self,request):return self.has_module_permission(request)
     def has_delete_permission(self,request,obj=None):return False
     def get_queryset(self,request):
         qs=super().get_queryset(request)
-        return qs if request.user.role=='technical' else qs.filter(role='guardian')
+        return qs if request.user.role in ('general_admin','technical') else qs.filter(role='guardian')
     def get_form(self,request,obj=None,**kwargs):
         form=super().get_form(request,obj,**kwargs)
         if request.user.role=='direction' and 'role' in form.base_fields:form.base_fields['role'].choices=[('guardian','Responsável')]
@@ -50,7 +50,7 @@ class ScopedAdmin(admin.ModelAdmin):
     roles=set()
     readonly_fields=()
     actions=None
-    def has_module_permission(self,request):return request.user.role in self.roles
+    def has_module_permission(self,request):return request.user.role=='general_admin' or request.user.role in self.roles
     def has_view_permission(self,request,obj=None):
         if not self.has_module_permission(request):return False
         return obj is None or self.get_queryset(request).filter(pk=obj.pk).exists()
@@ -63,7 +63,7 @@ class ScopedAdmin(admin.ModelAdmin):
         if db_field.related_model==Invoice:kwargs['queryset']=Invoice.objects.filter(student__in=students_for(request.user,True))
         if db_field.name=='guardian':kwargs['queryset']=User.objects.filter(role='guardian')
         if db_field.name=='assigned_to':
-            roles=['finance'] if request.user.role=='finance' else ['pedagogy','teacher','direction']
+            roles=['general_admin','finance','pedagogy','teacher','direction'] if request.user.role=='general_admin' else (['finance'] if request.user.role=='finance' else ['pedagogy','teacher','direction'])
             kwargs['queryset']=User.objects.filter(role__in=roles,is_active=True)
         return super().formfield_for_foreignkey(db_field,request,**kwargs)
     def save_model(self,request,obj,form,change):
@@ -125,14 +125,16 @@ class Documents(ScopedAdmin):
     roles={'direction','pedagogy','finance'};list_display=['title','student','classroom','finance_only','approved','published'];readonly_fields=['uploaded_by','uploaded_at','review_file']
     def get_queryset(self,request):
         qs=super().get_queryset(request)
-        return qs.filter(finance_only=request.user.role=='finance')
+        return qs if request.user.role=='general_admin' else qs.filter(finance_only=request.user.role=='finance')
     def get_form(self,request,obj=None,**kwargs):
         form=super().get_form(request,obj,**kwargs)
-        form.base_fields['finance_only'].disabled=True
-        form.base_fields['finance_only'].initial=request.user.role=='finance'
+        if request.user.role!='general_admin':
+            form.base_fields['finance_only'].disabled=True
+            form.base_fields['finance_only'].initial=request.user.role=='finance'
         return form
     def save_model(self,request,obj,form,change):
-        obj.finance_only=request.user.role=='finance';super().save_model(request,obj,form,change)
+        if request.user.role!='general_admin':obj.finance_only=request.user.role=='finance'
+        super().save_model(request,obj,form,change)
     @admin.display(description='Verificação do arquivo em quarentena')
     def review_file(self,obj):
         if not obj.pk:return 'Salve sem publicar antes de verificar o arquivo.'

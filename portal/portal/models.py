@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from .validators import validate_file,private_path
 
+STAFF_ROLES=frozenset({'general_admin','technical','direction','finance','pedagogy','teacher'})
+
 class UserManager(BaseUserManager):
     use_in_migrations=True
     def create_user(self,email,password=None,**extra):
@@ -15,7 +17,7 @@ class UserManager(BaseUserManager):
         extra.update(is_staff=True,is_superuser=True,role='technical')
         return self.create_user(email,password,**extra)
 class User(AbstractUser):
-    ROLES=[('guardian','Responsável'),('technical','Administração técnica'),('direction','Direção Geral'),('finance','Gestão Administrativa e Financeira'),('pedagogy','Coordenação Pedagógica'),('teacher','Professor ou auxiliar autorizado')]
+    ROLES=[('guardian','Responsável'),('general_admin','Administrador geral'),('technical','Administração técnica'),('direction','Direção Geral'),('finance','Gestão Administrativa e Financeira'),('pedagogy','Coordenação Pedagógica'),('teacher','Professor ou auxiliar autorizado')]
     username=None
     email=models.EmailField('E-mail',unique=True)
     role=models.CharField('Perfil',max_length=20,choices=ROLES,default='guardian')
@@ -24,7 +26,7 @@ class User(AbstractUser):
     objects=UserManager()
     def save(self,*args,**kwargs):
         self.email=self.email.strip().lower()
-        self.is_staff=self.role!='guardian'
+        self.is_staff=self.role in STAFF_ROLES
         super().save(*args,**kwargs)
     def __str__(self): return self.get_full_name() or self.email
     class Meta:
@@ -33,7 +35,7 @@ class User(AbstractUser):
 class Classroom(models.Model):
     name=models.CharField('Turma',max_length=100)
     stage=models.CharField('Etapa',max_length=20,choices=[('nursery','Berçário'),('early','Educação Infantil'),('year1','1º Ano')])
-    staff=models.ManyToManyField(User,blank=True,related_name='classrooms',verbose_name='Equipe autorizada',limit_choices_to=Q(role__in=['teacher','pedagogy','direction']))
+    staff=models.ManyToManyField(User,blank=True,related_name='classrooms',verbose_name='Equipe autorizada',limit_choices_to=Q(role__in=['general_admin','teacher','pedagogy','direction']))
     agenda_fields=models.JSONField('Campos da agenda',default=list,blank=True,help_text='Lista de chaves: food, rest, activities, pedagogy, school_note. Vazio usa padrão por etapa.')
     external_id=models.CharField('ID no sistema de gestão',max_length=100,unique=True,null=True,blank=True)
     def clean(self):

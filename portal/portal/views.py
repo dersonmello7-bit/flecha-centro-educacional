@@ -142,7 +142,8 @@ def download(request,kind,pk):
 
 @login_required
 def review_file(request,kind,pk):
-    if kind=='proof' and request.user.role=='finance':obj=get_object_or_404(PaymentProof,pk=pk)
+    if request.user.role=='general_admin' and kind=='document':obj=get_object_or_404(Document,pk=pk)
+    elif kind=='proof' and request.user.role in ('general_admin','finance'):obj=get_object_or_404(PaymentProof,pk=pk)
     elif kind=='document' and request.user.role in ('direction','pedagogy','finance'):
         obj=get_object_or_404(Document,pk=pk,finance_only=request.user.role=='finance')
     else:raise Http404()
@@ -154,12 +155,12 @@ def review_file(request,kind,pk):
 def stored_file(request,key):
     document=Document.objects.filter(file=key).first()
     if document:
-        if request.user.role in ('direction','pedagogy','finance') and document.finance_only==(request.user.role=='finance'):
+        if request.user.role=='general_admin' or (request.user.role in ('direction','pedagogy','finance') and document.finance_only==(request.user.role=='finance')):
             return review_file(request,'document',document.pk)
         return download(request,'document',document.pk)
     proof=PaymentProof.objects.filter(file=key).first()
     if proof:
-        if request.user.role=='finance':return review_file(request,'proof',proof.pk)
+        if request.user.role in ('general_admin','finance'):return review_file(request,'proof',proof.pk)
         return download(request,'proof',proof.pk)
     raise Http404()
 

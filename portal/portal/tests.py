@@ -226,6 +226,92 @@ class IsolationTests(TestCase):
         url=storage.url('quarantine/exemplo.pdf')
         self.assertEqual(url,'/arquivo-armazenado/quarantine/exemplo.pdf');self.assertNotIn('https://',url);self.assertNotIn('Signature',url)
 
+    def test_family_cannot_see_or_open_administration_even_with_stale_staff_flag(self):
+        User.objects.filter(pk=self.a.pk).update(is_staff=True)
+        self.a.refresh_from_db();self.client.force_login(self.a)
+        self.assertNotContains(self.client.get('/'), 'Administrar portal')
+        response=self.client.get('/administracao/')
+        self.assertEqual(response.status_code,302)
+        self.assertIn('/administracao/login/',response.url)
+
+    def test_only_explicit_active_collaborator_roles_can_administer(self):
+        from .access import can_administer_portal
+        from .models import STAFF_ROLES
+        for role in STAFF_ROLES:
+            self.tech.role=role;self.tech.save()
+            self.assertTrue(can_administer_portal(self.tech))
+        self.tech.role='unknown';self.tech.save()
+        self.assertFalse(self.tech.is_staff)
+        self.assertFalse(can_administer_portal(self.tech))
+        self.tech.role='technical';self.tech.is_active=False;self.tech.save()
+        self.assertFalse(can_administer_portal(self.tech))
+
+    def test_authorized_collaborator_sees_administration_link_and_can_open_it(self):
+        self.client.force_login(self.tech)
+        self.assertContains(self.client.get('/'), 'Administrar portal')
+        self.assertEqual(self.client.get('/administracao/').status_code,200)
+
+    def test_general_admin_has_school_finance_and_all_management_sections(self):
+        from .access import tickets_for
+        general=User.objects.create_user('geral@example.invalid','AdministradorFicticio321!',role='general_admin')
+        self.client.force_login(general)
+        self.assertSetEqual(set(students_for(general).values_list('pk',flat=True)),{self.sa.pk,self.sa2.pk,self.sb.pk})
+        self.assertEqual(students_for(general,True).count(),3)
+        for model in (Classroom,Student,GuardianLink,Notice,Event,Menu,Agenda,Invoice,Document):
+            path=f'/administracao/portal/{model._meta.model_name}/add/'
+            self.assertEqual(self.client.get(path).status_code,200,path)
+        for model in (User,PaymentProof,FamilyMessage,Ticket,Audit,ReadConfirmation):
+            path=f'/administracao/portal/{model._meta.model_name}/'
+            self.assertEqual(self.client.get(path).status_code,200,path)
+        self.assertContains(self.client.get('/financeiro/'),'999,00')
+        school_ticket=Ticket.objects.create(student=self.sa,requester=self.a,category='school',subject='Escolar',content='Exemplo')
+        finance_ticket=Ticket.objects.create(student=self.sb,requester=self.b,category='finance',subject='Financeiro',content='Exemplo')
+        self.assertSetEqual(set(tickets_for(general).values_list('pk',flat=True)),{school_ticket.pk,finance_ticket.pk})
+
+    def test_general_admin_can_create_school_content_finance_and_account_profiles(self):
+        general=User.objects.create_user('geral-edita@example.invalid','AdministradorFicticio321!',role='general_admin')
+        self.client.force_login(general)
+        r=self.client.post('/administracao/portal/student/add/',{'name':'Novo aluno fictício','classroom':self.c.pk,'period':'Integral','active':'on','_save':'Salvar'})
+        self.assertEqual(r.status_code,302)
+        self.assertTrue(Student.objects.filter(name='Novo aluno fictício').exists())
+        r=self.client.post('/administracao/portal/notice/add/',{'title':'Novo aviso fictício','content':'Conteúdo fictício','classroom':self.c.pk,'published_at_0':'2026-10-21','published_at_1':'08:00:00','_save':'Salvar'})
+        self.assertEqual(r.status_code,302);self.assertEqual(Notice.objects.get(title='Novo aviso fictício').author,general)
+        r=self.client.post('/administracao/portal/invoice/add/',{'student':self.sb.pk,'competence':'2026-10-01','due_date':'2026-10-31','amount':'123.00','status':'open','_save':'Salvar'})
+        self.assertEqual(r.status_code,302)
+        r=self.client.post('/administracao/portal/user/add/',{'email':'colaborador-ficticio@example.invalid','first_name':'Colaborador','role':'general_admin','_save':'Salvar'})
+        self.assertEqual(r.status_code,302);self.assertEqual(User.objects.get(email='colaborador-ficticio@example.invalid').role,'general_admin')
+
+    def test_general_admin_can_review_school_financial_documents_and_payment_proofs(self):
+        general=User.objects.create_user('geral-arquivos@example.invalid','AdministradorFicticio321!',role='general_admin')
+        self.client.force_login(general)
+        with override_settings(STORAGES={'default':{'BACKEND':'django.core.files.storage.InMemoryStorage'},'staticfiles':{'BACKEND':'django.contrib.staticfiles.storage.StaticFilesStorage'}}):
+            from django.contrib import admin
+            request=type('Request',(),{'user':general})()
+            for financial in (False,True):
+                doc=Document.objects.create(title='Documento fictício',student=self.sb,finance_only=financial,file=SimpleUploadedFile('exemplo.pdf',b'%PDF-1.4\n%%EOF'),uploaded_by=self.p)
+                self.assertIn(doc,admin.site._registry[Document].get_queryset(request))
+                self.assertEqual(self.client.get(f'/conferencia-arquivo/document/{doc.pk}/').status_code,200)
+                self.assertEqual(self.client.get('/arquivo-armazenado/'+doc.file.name).status_code,200)
+            proof=PaymentProof.objects.create(invoice=self.inv_b,file=SimpleUploadedFile('prova.pdf',b'%PDF-1.4\n%%EOF'),uploaded_by=self.b)
+            self.assertEqual(self.client.get(f'/conferencia-arquivo/proof/{proof.pk}/').status_code,200)
+
+    def test_direction_cannot_assign_general_admin_profile(self):
+        direction=User.objects.create_user('direcao-limitada@example.invalid','DirecaoFicticia123!',role='direction')
+        self.client.force_login(direction)
+        response=self.client.post('/administracao/portal/user/add/',{'email':'nao-promover@example.invalid','role':'general_admin','_save':'Salvar'})
+        self.assertEqual(response.status_code,200)
+        self.assertFalse(User.objects.filter(email='nao-promover@example.invalid').exists())
+
+    def test_bootstrap_preserves_general_admin_without_second_invite(self):
+        from django.core.management import call_command
+        from unittest.mock import patch
+        import os
+        general=User.objects.create_user('geral-bootstrap@example.invalid','AdministradorFicticio321!',role='general_admin')
+        Audit.objects.create(actor=general,action='bootstrap.invited')
+        with override_settings(EMAIL_READY=True,DEFAULT_FROM_EMAIL='escola@example.invalid'),patch.dict(os.environ,{'BOOTSTRAP_ADMIN_EMAIL':general.email}):
+            call_command('bootstrap_admin')
+        general.refresh_from_db();self.assertEqual(general.role,'general_admin');self.assertEqual(len(mail.outbox),0)
+
     def test_remote_storage_preflight_cleans_its_synthetic_sample(self):
         from django.core.management import call_command
         from django.core.files.storage import default_storage
