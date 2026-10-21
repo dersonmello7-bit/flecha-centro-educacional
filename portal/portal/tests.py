@@ -225,3 +225,21 @@ class IsolationTests(TestCase):
         storage=PrivateS3Storage(bucket_name='ficticio-privado',access_key='chave-ficticia',secret_key='segredo-ficticio',endpoint_url='https://storage.example.invalid',region_name='test')
         url=storage.url('quarantine/exemplo.pdf')
         self.assertEqual(url,'/arquivo-armazenado/quarantine/exemplo.pdf');self.assertNotIn('https://',url);self.assertNotIn('Signature',url)
+
+    def test_remote_storage_preflight_cleans_its_synthetic_sample(self):
+        from django.core.management import call_command
+        from django.core.files.storage import default_storage
+        with override_settings(STORAGE_ENDPOINT='https://storage.example.invalid', STORAGES={'default':{'BACKEND':'django.core.files.storage.InMemoryStorage'},'staticfiles':{'BACKEND':'django.contrib.staticfiles.storage.StaticFilesStorage'}}):
+            call_command('verify_private_storage')
+            self.assertEqual(default_storage.listdir('operational-check')[1], [])
+
+    def test_remote_storage_preflight_cleans_after_read_error_without_leaking(self):
+        from django.core.management import call_command, CommandError
+        from django.core.files.storage import default_storage
+        from unittest.mock import patch
+        with override_settings(STORAGE_ENDPOINT='https://storage.example.invalid', STORAGES={'default':{'BACKEND':'django.core.files.storage.InMemoryStorage'},'staticfiles':{'BACKEND':'django.contrib.staticfiles.storage.StaticFilesStorage'}}):
+            with patch.object(default_storage, 'open', side_effect=RuntimeError('segredo-ficticio')):
+                with self.assertRaises(CommandError) as raised:
+                    call_command('verify_private_storage')
+            self.assertNotIn('segredo-ficticio', str(raised.exception))
+            self.assertEqual(default_storage.listdir('operational-check')[1], [])

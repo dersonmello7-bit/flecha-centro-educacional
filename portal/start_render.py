@@ -3,6 +3,7 @@ import os,subprocess,sys
 def main():
     if os.environ.get('FLECHA_LOCAL')=='1' or os.environ.get('FLECHA_TEST')=='1':raise SystemExit('Modo local/teste não deve ser publicado.')
     subprocess.run([sys.executable,'manage.py','migrate','--noinput'],check=True)
+    if os.environ.get('VERIFY_PRIVATE_STORAGE')=='1':subprocess.run([sys.executable,'manage.py','verify_private_storage'],check=True)
     if os.environ.get('BOOTSTRAP_ADMIN_EMAIL'):subprocess.run([sys.executable,'manage.py','bootstrap_admin'],check=True)
     port=os.environ.get('PORT','10000')
     if not port.isdigit():raise SystemExit('PORT inválida.')
