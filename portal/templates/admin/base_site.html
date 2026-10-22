@@ -1,0 +1,6 @@
+{% extends "admin/base.html" %}{% load static %}
+{% block title %}{{ title }} · Equipe Flecha{% endblock %}
+{% block extrastyle %}<meta charset="utf-8">{{ block.super }}<link rel="stylesheet" href="{% static 'admin-flecha.css' %}">{% endblock %}
+{% block branding %}<a class="flecha-brand" href="{% url 'admin:index' %}"><img src="{% static 'logo-flecha.jpeg' %}" alt="Flecha Centro Educacional Integrado"><span>Área da equipe</span></a>{% endblock %}
+{% block userlinks %}<a href="{% url 'dashboard' %}">Ver portal da família</a> / <a href="{% url 'admin:password_change' %}">Alterar senha</a> / <form id="logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">Sair com segurança</button></form>{% endblock %}
+{% block footer %}<footer class="flecha-footer">Flecha Centro Educacional Integrado · Área exclusiva da equipe autorizada</footer>{% endblock %}

@@ -11,7 +11,28 @@ from .access import students_for,authorized_students,tickets_for,audit
 
 admin.site.site_header='Flecha · Administração do portal'
 admin.site.site_title='Flecha'
-admin.site.index_title='Publicações, vínculos e atendimento'
+admin.site.index_title='Área da equipe'
+
+class ClassroomForm(forms.ModelForm):
+    staff=forms.ModelMultipleChoiceField(label='Equipe autorizada',required=False,
+        queryset=User.objects.filter(role__in=['general_admin','teacher','pedagogy','direction']),
+        widget=forms.CheckboxSelectMultiple,help_text='Marque as pessoas autorizadas a acompanhar esta turma.')
+    agenda_fields=forms.MultipleChoiceField(label='O que preencher na agenda?',required=False,
+        choices=[('food','Alimentação'),('rest','Sono e descanso'),('activities','Atividades'),('pedagogy','Observações pedagógicas'),('school_note','Recados da escola')],
+        widget=forms.CheckboxSelectMultiple,help_text='Marque os campos usados nesta turma. Sem marcações, usamos o padrão da etapa escolar.')
+    class Meta:
+        model=Classroom
+        fields='__all__'
+
+class FriendlyFields:
+    def get_form(self,request,obj=None,**kwargs):
+        form=super().get_form(request,obj,**kwargs)
+        labels={'first_name':'Nome','last_name':'Sobrenome','is_active':'Acesso ativo','password':'Senha de acesso','external_id':'Código no sistema de gestão (opcional)','author':'Registrado por','uploaded_by':'Enviado por','uploaded_at':'Enviado em','created_at':'Criado em','updated_at':'Atualizado em','requester':'Solicitado por','read_at':'Lido em','notice':'Comunicado','user':'Pessoa','actor':'Responsável pela ação','action':'Ação realizada','model':'Tipo de registro','object_id':'Código do registro'}
+        for key,field in form.base_fields.items():
+            if key in labels:field.label=labels[key]
+            if key=='external_id':field.help_text='Preencha somente se este cadastro já possui um código no sistema de gestão.'
+            if isinstance(field.widget,forms.Textarea):field.widget.attrs['rows']=5
+        return form
 
 class AddUser(forms.ModelForm):
     class Meta:model=User;fields=['email','first_name','last_name','role']
@@ -23,7 +44,7 @@ class AddUser(forms.ModelForm):
 class EditUser(UserChangeForm):
     class Meta:model=User;fields=['email','first_name','last_name','role','is_active']
 @admin.register(User)
-class Accounts(UserAdmin):
+class Accounts(FriendlyFields,UserAdmin):
     add_form=AddUser;form=EditUser
     ordering=['email'];list_display=['email','first_name','role','is_active'];search_fields=['email','first_name']
     list_filter=['role','is_active']
@@ -46,7 +67,7 @@ class Accounts(UserAdmin):
         if request.user.role=='direction' and obj.role!='guardian':raise PermissionDenied()
         super().save_model(request,obj,form,change);audit(request.user,'user.update',obj)
 
-class ScopedAdmin(admin.ModelAdmin):
+class ScopedAdmin(FriendlyFields,admin.ModelAdmin):
     roles=set()
     readonly_fields=()
     actions=None
@@ -76,7 +97,8 @@ class ScopedAdmin(admin.ModelAdmin):
         obj.full_clean();super().save_model(request,obj,form,change);audit(request.user,'admin.update' if change else 'admin.create',obj)
 @admin.register(Classroom)
 class Classrooms(ScopedAdmin):
-    roles={'direction','pedagogy'};list_display=['name','stage','external_id'];filter_horizontal=['staff']
+    form=ClassroomForm
+    roles={'direction','pedagogy'};list_display=['name','stage','external_id']
 @admin.register(Student)
 class Students(ScopedAdmin):
     roles={'direction','pedagogy','finance'};list_display=['name','classroom','period','active'];list_filter=['classroom','active'];search_fields=['name','external_id']

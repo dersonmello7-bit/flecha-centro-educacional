@@ -31,6 +31,8 @@ class User(AbstractUser):
     def __str__(self): return self.get_full_name() or self.email
     class Meta:
         constraints=[models.UniqueConstraint(models.functions.Lower('email'),name='email_case_insensitive')]
+        verbose_name='conta e perfil'
+        verbose_name_plural='Contas e perfis'
 
 class Classroom(models.Model):
     name=models.CharField('Turma',max_length=100)
@@ -43,6 +45,9 @@ class Classroom(models.Model):
         if not isinstance(self.agenda_fields,list) or any(x not in allowed for x in self.agenda_fields): raise ValidationError({'agenda_fields':'Informe uma lista válida de campos da agenda.'})
         if len(self.agenda_fields)!=len(set(self.agenda_fields)): raise ValidationError({'agenda_fields':'Não repita campos.'})
     def __str__(self):return self.name
+    class Meta:
+        verbose_name='turma'
+        verbose_name_plural='Turmas'
 
 class Student(models.Model):
     name=models.CharField('Aluno',max_length=160)
@@ -51,6 +56,9 @@ class Student(models.Model):
     active=models.BooleanField('Matrícula ativa',default=True)
     external_id=models.CharField('ID no sistema de gestão',max_length=100,unique=True,null=True,blank=True)
     def __str__(self):return self.name
+    class Meta:
+        verbose_name='aluno'
+        verbose_name_plural='Alunos'
 
 class GuardianLink(models.Model):
     guardian=models.ForeignKey(User,on_delete=models.PROTECT,limit_choices_to={'role':'guardian'},verbose_name='Responsável')
@@ -59,7 +67,10 @@ class GuardianLink(models.Model):
     can_finance=models.BooleanField('Responsável financeiro autorizado',default=False)
     active=models.BooleanField('Vínculo autorizado',default=True)
     verified_at=models.DateTimeField('Vínculo conferido em',null=True,blank=True)
-    class Meta:constraints=[models.UniqueConstraint(fields=['guardian','student'],name='guardian_student_unique')]
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['guardian','student'],name='guardian_student_unique')]
+        verbose_name='vínculo com responsável'
+        verbose_name_plural='Vínculos com responsáveis'
     def clean(self):
         if self.guardian_id and self.guardian.role!='guardian':raise ValidationError('Vincule uma conta de responsável.')
         if self.active and not self.verified_at:raise ValidationError('Confira a autorização legal/cadastral e informe a data antes de liberar o vínculo.')
@@ -76,20 +87,32 @@ class Publication(models.Model):
 class Notice(Publication):
     require_read=models.BooleanField('Solicitar confirmação de leitura',default=False)
     def __str__(self):return self.title
+    class Meta:
+        verbose_name='comunicado'
+        verbose_name_plural='Comunicados'
 class ReadConfirmation(models.Model):
     notice=models.ForeignKey(Notice,on_delete=models.CASCADE)
     user=models.ForeignKey(User,on_delete=models.PROTECT)
     read_at=models.DateTimeField(auto_now_add=True)
-    class Meta:constraints=[models.UniqueConstraint(fields=['notice','user'],name='unique_notice_read')]
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['notice','user'],name='unique_notice_read')]
+        verbose_name='confirmação de leitura'
+        verbose_name_plural='Confirmações de leitura'
 class Event(Publication):
     date=models.DateField('Data do evento')
     category=models.CharField('Categoria',max_length=20,choices=[('holiday','Feriado'),('break','Recesso'),('meeting','Reunião'),('event','Evento'),('activity','Atividade')])
     def __str__(self):return f'{self.date} — {self.title}'
+    class Meta:
+        verbose_name='evento'
+        verbose_name_plural='Calendário de eventos'
 class Menu(Publication):
     week=models.DateField('Semana iniciada em')
     reviewed_by=models.CharField('Revisão nutricional',max_length=160)
     change_note=models.CharField('Alterações do cardápio',max_length=250,blank=True)
     def __str__(self):return f'{self.week} — {self.title}'
+    class Meta:
+        verbose_name='cardápio'
+        verbose_name_plural='Cardápios'
 class Agenda(models.Model):
     student=models.ForeignKey(Student,on_delete=models.PROTECT,verbose_name='Aluno')
     date=models.DateField('Data')
@@ -100,7 +123,10 @@ class Agenda(models.Model):
     school_note=models.TextField('Recados da escola',blank=True)
     author=models.ForeignKey(User,on_delete=models.PROTECT,editable=False)
     updated_at=models.DateTimeField(auto_now=True)
-    class Meta:ordering=['-date'];constraints=[models.UniqueConstraint(fields=['student','date'],name='unique_student_daily_agenda')]
+    class Meta:
+        ordering=['-date'];constraints=[models.UniqueConstraint(fields=['student','date'],name='unique_student_daily_agenda')]
+        verbose_name='agenda do aluno'
+        verbose_name_plural='Agendas dos alunos'
     def __str__(self):return f'{self.student} — {self.date}'
     def allowed_fields(self):
         c=self.student.classroom
@@ -115,7 +141,10 @@ class FamilyMessage(models.Model):
     author=models.ForeignKey(User,on_delete=models.PROTECT,editable=False)
     text=models.TextField('Recado',max_length=3000)
     created_at=models.DateTimeField(auto_now_add=True)
-    class Meta:ordering=['-created_at']
+    class Meta:
+        ordering=['-created_at']
+        verbose_name='recado da família'
+        verbose_name_plural='Recados das famílias'
 class Invoice(models.Model):
     student=models.ForeignKey(Student,on_delete=models.PROTECT,verbose_name='Aluno')
     competence=models.DateField('Competência (primeiro dia do mês)')
@@ -124,7 +153,10 @@ class Invoice(models.Model):
     status=models.CharField('Situação',max_length=15,choices=[('open','Em aberto'),('paid','Pago'),('cancelled','Cancelado')],default='open')
     reconciled_at=models.DateTimeField('Conciliação conferida em',null=True,blank=True)
     external_id=models.CharField('ID no sistema de gestão',max_length=100,unique=True,null=True,blank=True)
-    class Meta:ordering=['-competence']
+    class Meta:
+        ordering=['-competence']
+        verbose_name='mensalidade'
+        verbose_name_plural='Mensalidades'
     def clean(self):
         if self.status=='paid' and not self.reconciled_at:raise ValidationError('Informe a conferência da conciliação antes de marcar como pago.')
         if self.competence and self.competence.day!=1:raise ValidationError('Use o primeiro dia do mês na competência.')
@@ -144,10 +176,16 @@ class Document(PrivateFile):
     def clean(self):
         if self.student_id and self.classroom_id:raise ValidationError('Escolha aluno ou turma, nunca ambos.')
     def __str__(self):return self.title
+    class Meta:
+        verbose_name='documento'
+        verbose_name_plural='Documentos'
 class PaymentProof(PrivateFile):
     invoice=models.ForeignKey(Invoice,on_delete=models.PROTECT,verbose_name='Mensalidade')
     status=models.CharField('Análise',max_length=15,choices=[('pending','Pendente de conciliação'),('reviewed','Analisado'),('rejected','Recusado')],default='pending')
     def __str__(self):return f'Comprovante #{self.pk} — {self.get_status_display()}'
+    class Meta:
+        verbose_name='comprovante de pagamento'
+        verbose_name_plural='Comprovantes de pagamento'
 class Ticket(models.Model):
     CATEGORIES=[('pedagogy','Atendimento pedagógico'),('administrative','Atendimento administrativo'),('finance','Atendimento financeiro'),('documents','Documentos e declarações'),('other','Outras solicitações')]
     student=models.ForeignKey(Student,on_delete=models.PROTECT,verbose_name='Aluno')
@@ -163,13 +201,19 @@ class Ticket(models.Model):
     @property
     def protocol(self):return f'FLE-{self.created_at:%Y}-{self.pk:06d}'
     def __str__(self):return f'{self.protocol} — {self.subject}'
+    class Meta:
+        verbose_name='atendimento'
+        verbose_name_plural='Atendimentos'
 class Audit(models.Model):
     actor=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,blank=True)
     action=models.CharField(max_length=60)
     model=models.CharField(max_length=80,blank=True)
     object_id=models.CharField(max_length=40,blank=True)
     created_at=models.DateTimeField(auto_now_add=True)
-    class Meta:ordering=['-created_at']
+    class Meta:
+        ordering=['-created_at']
+        verbose_name='registro de atividade'
+        verbose_name_plural='Registros de atividade'
 class AccessAttempt(models.Model):
     key=models.CharField(max_length=64,db_index=True)
     created_at=models.DateTimeField(auto_now_add=True,db_index=True)

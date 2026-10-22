@@ -329,3 +329,16 @@ class IsolationTests(TestCase):
                     call_command('verify_private_storage')
             self.assertNotIn('segredo-ficticio', str(raised.exception))
             self.assertEqual(default_storage.listdir('operational-check')[1], [])
+
+
+class StaffFormTests(TestCase):
+    def test_classroom_form_saves_checkbox_choices_and_rejects_unknown_fields(self):
+        from .admin import ClassroomForm
+        form=ClassroomForm(data={'name':'Turma fictícia','stage':'nursery','agenda_fields':['food','rest']})
+        self.assertTrue(form.is_valid(),form.errors)
+        classroom=form.save()
+        self.assertEqual(classroom.agenda_fields,['food','rest'])
+        edit=ClassroomForm(instance=classroom)
+        self.assertEqual(edit.initial['agenda_fields'],['food','rest'])
+        invalid=ClassroomForm(data={'name':'Turma fictícia','stage':'nursery','agenda_fields':['campo_inexistente']})
+        self.assertFalse(invalid.is_valid())
