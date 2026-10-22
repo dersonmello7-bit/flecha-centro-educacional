@@ -36,7 +36,7 @@ class User(AbstractUser):
 
 class Classroom(models.Model):
     name=models.CharField('Turma',max_length=100)
-    stage=models.CharField('Etapa',max_length=20,choices=[('nursery','Berçário'),('early','Educação Infantil'),('year1','1º Ano')])
+    stage=models.CharField('Etapa',max_length=20,choices=[('nursery','Berçário'),('early','Educação Infantil'),('year1','1º Ano'),('after_school','Contraturno')])
     staff=models.ManyToManyField(User,blank=True,related_name='classrooms',verbose_name='Equipe autorizada',limit_choices_to=Q(role__in=['general_admin','teacher','pedagogy','direction']))
     agenda_fields=models.JSONField('Campos da agenda',default=list,blank=True,help_text='Lista de chaves: food, rest, activities, pedagogy, school_note. Vazio usa padrão por etapa.')
     external_id=models.CharField('ID no sistema de gestão',max_length=100,unique=True,null=True,blank=True)
