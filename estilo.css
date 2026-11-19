@@ -325,3 +325,21 @@ h2 { font-size:clamp(40px,4.6vw,66px); line-height:1; letter-spacing:-.045em; }
 .testimonials{background:#e8efda}
 .faq-list details{border-left:4px solid #eab52c;padding-left:18px}
 .faq-list details:nth-child(even){border-left-color:#e86a24}
+
+.school-app{background:#123e2a;color:#fff;padding:76px 0;border-top:7px solid #f6bd26}
+.school-app .section-label{color:#f6d16d}
+.app-intro{max-width:740px;margin-bottom:32px}
+.app-intro h2{margin:18px 0 22px}
+.app-intro h2 em{color:#ffc32b}
+.app-intro>p:last-child{color:#e3ecd8;line-height:1.7}
+.app-platforms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.app-platform{border-radius:22px;padding:32px;display:flex;align-items:flex-start;flex-direction:column;color:#123e2a;min-width:0}
+.app-android{background:#fff1be}
+.app-web{background:#e5edd6}
+.app-badge{background:#123e2a;color:white;border-radius:30px;padding:7px 14px;font-size:12px;font-weight:700}
+.app-platform h3{font-size:26px;margin:22px 0 12px}
+.app-platform p{line-height:1.7;margin-bottom:24px}
+.app-platform .button{margin-top:auto;border-radius:10px}
+.app-platform small{font-size:12px;line-height:1.6;display:block;margin-top:18px;color:#40583b}
+.app-help{color:#e3ecd8;font-size:13px;line-height:1.7;margin:26px 0 0;max-width:850px}
+@media(max-width:760px){.app-platforms{grid-template-columns:1fr}.school-app{padding:48px 0}.app-platform{padding:24px}.app-platform h3{font-size:23px}}
