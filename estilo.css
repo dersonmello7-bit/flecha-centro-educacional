@@ -306,3 +306,22 @@ h2 { font-size:clamp(40px,4.6vw,66px); line-height:1; letter-spacing:-.045em; }
 .institution-info summary{cursor:pointer;font-weight:700}
 .institution-info p{margin:16px 0 0;max-width:900px}
 @media(max-width:760px){.proposal-features{grid-template-columns:1fr;gap:22px}}
+
+/* Cores da identidade Flecha em cartões e destaques */
+.proposal-features article{border-top:5px solid #f6b91f;background:#fff8de;padding:24px;border-radius:18px}
+.proposal-features article:nth-child(2){border-color:#e96520;background:#fff0e5}
+.proposal-features article:nth-child(3){border-color:#638542;background:#e4edce}
+#programas .program-card{border:1px solid #e4d6b3;border-top:7px solid #efb51d;border-radius:20px;background:#fff7db;box-shadow:0 8px 22px rgba(18,62,42,.05)}
+#programas .program-card:nth-child(2){border-top-color:#e86a24;background:#fff0e5}
+#programas .program-card:nth-child(3){border-top-color:#65894a;background:#eaf1df}
+#programas .program-card:nth-child(4){border-top-color:#d1971b;background:#fff3ce}
+#programas .program-card>span{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#f7c541;color:#123e2a;font-weight:700}
+#programas .program-card:nth-child(2)>span{background:#f8c9a4}
+#programas .program-card:nth-child(3)>span{background:#bfd39e}
+#programas .program-card:nth-child(4)>span{background:#f6ce65}
+#programas .program-enquiry{border-radius:10px}
+.team-card{border-radius:18px}
+.team-card:nth-child(3) .team-photo{background:#f6d99b}
+.testimonials{background:#e8efda}
+.faq-list details{border-left:4px solid #eab52c;padding-left:18px}
+.faq-list details:nth-child(even){border-left-color:#e86a24}
